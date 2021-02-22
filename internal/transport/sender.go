@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -8,10 +9,23 @@ import (
 
 	"fyne.io/fyne/v2"
 	"github.com/psanford/wormhole-william/wormhole"
+	"go4.org/readerutil"
 )
 
 // NewFileSend takes the chosen file and sends it using wormhole-william.
 func (c *Client) NewFileSend(file fyne.URIReadCloser, progress wormhole.SendOption) (string, chan wormhole.SendResult, error) {
+	if fyne.CurrentApp().Driver().Device().IsMobile() {
+		buffer := &bytes.Buffer{}
+
+		n, err := io.Copy(buffer, file)
+		if err != nil {
+			fyne.LogError("Could not copy the file contents", err)
+			return "", nil, err
+		}
+
+		return c.SendFile(context.Background(), file.URI().Name(), readerutil.NewFakeSeeker(file, n), progress)
+	}
+
 	return c.SendFile(context.Background(), file.URI().Name(), file.(io.ReadSeeker), progress)
 }
 
