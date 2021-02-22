@@ -1,5 +1,5 @@
-fyne.io/fyne/v2 v2.0.0 h1:TfsS3bNq5663BpXsoz1OfzyjcaMqqOf9usI8ZKkw4IE=
-fyne.io/fyne/v2 v2.0.0/go.mod h1:FmobqvPpBW+nG1nDyxZWf1SQLED9g/vXIxiIIVjHazY=
+fyne.io/fyne/v2 v2.0.1-0.20210221193418-ec32c77b3ce4 h1:P8wqCqpOQC9vRAleK1ClP5eWNnNkdk3r9T9TfxbFtLg=
+fyne.io/fyne/v2 v2.0.1-0.20210221193418-ec32c77b3ce4/go.mod h1:Q12wKzvdrCct+tkaJcMuTmcyDz4ZDjc6+/llerrFnFc=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Kodeworks/golang-image-ico v0.0.0-20141118225523-73f0f4cfade9/go.mod h1:7uhhqiBaR4CpN0k9rMjOtjpcfGd6DG2m04zQxKnWQ0I=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
