@@ -14,7 +14,7 @@ import (
 
 // NewFileSend takes the chosen file and sends it using wormhole-william.
 func (c *Client) NewFileSend(file fyne.URIReadCloser, progress wormhole.SendOption) (string, chan wormhole.SendResult, error) {
-	if fyne.CurrentApp().Driver().Device().IsMobile() {
+	if fyne.CurrentDevice().IsMobile() {
 		buffer := &bytes.Buffer{}
 
 		n, err := io.Copy(buffer, file)
