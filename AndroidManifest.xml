@@ -1,0 +1,20 @@
+<manifest
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	package="com.github.jacalz.wormhole-gui"
+	android:versionCode="1"
+	android:versionName="3.0">
+	<application android:label="Wormhole-gui" android:debuggable="true">
+	<activity android:name="org.golang.app.GoNativeActivity"
+		android:label="wormhole-gui"
+		android:configChanges="orientation|keyboardHidden">
+		<meta-data android:name="android.app.lib_name" android:value="wormhole-gui" />
+		<intent-filter>
+			<action android:name="android.intent.action.MAIN" />
+			<category android:name="android.intent.category.LAUNCHER" />
+		</intent-filter>
+	</activity>
+	</application>
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
