@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/storage"
@@ -52,18 +51,26 @@ func (c *Client) NewReceive(code string, pathname chan string) (err error) {
 		return nil
 	}
 
-	path := filepath.Join(c.DownloadPath, msg.Name)
-	pathToSend = storage.NewFileURI(path).String()
+	filename := msg.Name
+	if fyne.CurrentDevice().IsMobile() && msg.Type == wormhole.TransferDirectory {
+		filename += ".zip"
+	}
 
-	if !c.OverwriteExisting {
-		if _, err := os.Stat(path); err == nil || os.IsExist(err) {
-			fyne.LogError("Settings prevent overwriting existing files and folders", err)
-			return bail(msg, os.ErrExist)
-		}
+	child, err := storage.Child(c.DownloadPath, filename)
+	if err != nil {
+		fyne.LogError("Could not create a child uri", err)
+		return bail(msg, err)
+	}
+
+	pathToSend = child.String()
+
+	if exists, err := storage.Exists(child); !c.OverwriteExisting && (exists || err != nil) {
+		fyne.LogError("Settings prevent overwriting existing files and folders", err)
+		return bail(msg, os.ErrExist)
 	}
 
 	if msg.Type == wormhole.TransferFile {
-		file, err := storage.Writer(storage.NewFileURI(path))
+		file, err := storage.Writer(child)
 		if err != nil {
 			fyne.LogError("Error on creating file", err)
 			return bail(msg, err)
@@ -86,7 +93,7 @@ func (c *Client) NewReceive(code string, pathname chan string) (err error) {
 	}
 
 	if fyne.CurrentDevice().IsMobile() {
-		file, err := storage.Writer(storage.NewFileURI(path + ".zip"))
+		file, err := storage.Writer(child)
 		if err != nil {
 			fyne.LogError("Error on creating file", err)
 			return bail(msg, err)
@@ -132,7 +139,7 @@ func (c *Client) NewReceive(code string, pathname chan string) (err error) {
 		return err
 	}
 
-	err = zip.Extract(tmp, n, path)
+	err = zip.Extract(tmp, n, child.Path())
 	if err != nil {
 		fyne.LogError("Error on unzipping contents", err)
 		return err

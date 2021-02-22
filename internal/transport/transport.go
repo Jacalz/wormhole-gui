@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/storage"
 	"github.com/psanford/wormhole-william/wormhole"
 )
 
@@ -22,8 +23,8 @@ type Client struct {
 	// OverwriteExisting holds the settings value for if we should overwrite already existing files.
 	OverwriteExisting bool
 
-	// DownloadPath holds the download path used for saving recvieved files.
-	DownloadPath string
+	// DownloadPath holds the download path used for saving receieved files.
+	DownloadPath fyne.URI
 }
 
 // ShowNotification sends a notification if c.Notifications is true.
@@ -39,11 +40,11 @@ func NewClient() *Client {
 }
 
 // UserDownloadsFolder returns the downloads folder corresponding to the current user.
-func UserDownloadsFolder() string {
+func UserDownloadsFolder() fyne.URI {
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		fyne.LogError("Could not get home dir", err)
 	}
 
-	return filepath.Join(dir, "Downloads")
+	return storage.NewFileURI(filepath.Join(dir, "Downloads"))
 }

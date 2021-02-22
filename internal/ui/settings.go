@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/Jacalz/wormhole-gui/internal/transport"
@@ -57,8 +58,8 @@ func (s *settings) onDownloadsPathChanged() {
 			return
 		}
 
-		s.app.Preferences().SetString("DownloadPath", folder.String()[7:])
-		s.client.DownloadPath = folder.String()[7:]
+		s.app.Preferences().SetString("DownloadURI", folder.String())
+		s.client.DownloadPath = folder
 		s.downloadPathButton.SetText(folder.Name())
 	}, s.window)
 }
@@ -82,8 +83,12 @@ func (s *settings) onComponentsChange(value float64) {
 func (s *settings) buildUI() *container.Scroll {
 	s.themeSelect = &widget.Select{Options: themes, OnChanged: s.onThemeChanged, Selected: s.appSettings.Theme}
 
-	s.client.DownloadPath = s.app.Preferences().StringWithFallback("DownloadPath", transport.UserDownloadsFolder())
-	s.downloadPathButton = &widget.Button{Icon: theme.FolderOpenIcon(), OnTapped: s.onDownloadsPathChanged, Text: filepath.Base(s.client.DownloadPath)}
+	if uri, err := storage.ParseURI(s.app.Preferences().StringWithFallback("DownloadURI", transport.UserDownloadsFolder().String())); err != nil {
+		fyne.LogError("Could not parse the download URI", err)
+	} else {
+		s.client.DownloadPath = uri
+	}
+	s.downloadPathButton = &widget.Button{Icon: theme.FolderOpenIcon(), OnTapped: s.onDownloadsPathChanged, Text: filepath.Base(s.client.DownloadPath.Path())}
 
 	s.overwriteFiles = &widget.RadioGroup{Options: onOffOptions, Horizontal: true, Required: true, OnChanged: s.onOverwriteFilesChanged}
 	s.overwriteFiles.SetSelected(s.app.Preferences().StringWithFallback("OverwriteFiles", "Off"))
