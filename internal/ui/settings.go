@@ -83,12 +83,17 @@ func (s *settings) onComponentsChange(value float64) {
 func (s *settings) buildUI() *container.Scroll {
 	s.themeSelect = &widget.Select{Options: themes, OnChanged: s.onThemeChanged, Selected: s.appSettings.Theme}
 
-	if uri, err := storage.ParseURI(s.app.Preferences().StringWithFallback("DownloadURI", transport.UserDownloadsFolder().String())); err != nil {
-		fyne.LogError("Could not parse the download URI", err)
+	if !fyne.CurrentDevice().IsMobile() {
+		if uri, err := storage.ParseURI(s.app.Preferences().StringWithFallback("DownloadURI", transport.UserDownloadsFolder().String())); err != nil {
+			fyne.LogError("Could not parse the download URI", err)
+		} else {
+			s.client.DownloadPath = uri
+		}
+		s.downloadPathButton = &widget.Button{Icon: theme.FolderOpenIcon(), OnTapped: s.onDownloadsPathChanged, Text: filepath.Base(s.client.DownloadPath.Path())}
 	} else {
-		s.client.DownloadPath = uri
+		s.downloadPathButton = &widget.Button{Icon: theme.FolderOpenIcon(), Text: "Not possible on mobile"}
+		s.downloadPathButton.Disable()
 	}
-	s.downloadPathButton = &widget.Button{Icon: theme.FolderOpenIcon(), OnTapped: s.onDownloadsPathChanged, Text: filepath.Base(s.client.DownloadPath.Path())}
 
 	s.overwriteFiles = &widget.RadioGroup{Options: onOffOptions, Horizontal: true, Required: true, OnChanged: s.onOverwriteFilesChanged}
 	s.overwriteFiles.SetSelected(s.app.Preferences().StringWithFallback("OverwriteFiles", "Off"))

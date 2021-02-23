@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
 	"github.com/Jacalz/wormhole-gui/internal/transport/zip"
 	"github.com/psanford/wormhole-william/wormhole"
@@ -51,12 +52,43 @@ func (c *Client) NewReceive(code string, pathname chan string) (err error) {
 		return nil
 	}
 
-	filename := msg.Name
-	if fyne.CurrentDevice().IsMobile() && msg.Type == wormhole.TransferDirectory {
-		filename += ".zip"
+	if fyne.CurrentDevice().IsMobile() {
+		var merr error = nil
+		save := dialog.NewFileSave(func(file fyne.URIWriteCloser, err error) {
+			if err != nil {
+				fyne.LogError("Could not open the file", err)
+				merr = err
+				return
+			} else if file == nil {
+				return
+			}
+
+			defer func() {
+				if cerr := file.Close(); cerr != nil {
+					fyne.LogError("Error on closing file", err)
+					merr = cerr
+				}
+			}()
+
+			_, err = io.Copy(file, msg)
+			if err != nil {
+				fyne.LogError("Error on copying contents to file", err)
+				merr = err
+				return
+			}
+		}, fyne.CurrentApp().Driver().AllWindows()[0])
+
+		filename := msg.Name
+		if msg.Type == wormhole.TransferDirectory {
+			filename += ".zip"
+		}
+		save.SetFileName(filename)
+
+		save.Show()
+		return merr
 	}
 
-	child, err := storage.Child(c.DownloadPath, filename)
+	child, err := storage.Child(c.DownloadPath, msg.Name)
 	if err != nil {
 		fyne.LogError("Could not create a child uri", err)
 		return bail(msg, err)
@@ -70,29 +102,6 @@ func (c *Client) NewReceive(code string, pathname chan string) (err error) {
 	}
 
 	if msg.Type == wormhole.TransferFile {
-		file, err := storage.Writer(child)
-		if err != nil {
-			fyne.LogError("Error on creating file", err)
-			return bail(msg, err)
-		}
-
-		defer func() {
-			if cerr := file.Close(); cerr != nil {
-				fyne.LogError("Error on closing file", err)
-				err = cerr
-			}
-		}()
-
-		_, err = io.Copy(file, msg)
-		if err != nil {
-			fyne.LogError("Error on copying contents to file", err)
-			return err
-		}
-
-		return nil
-	}
-
-	if fyne.CurrentDevice().IsMobile() {
 		file, err := storage.Writer(child)
 		if err != nil {
 			fyne.LogError("Error on creating file", err)
