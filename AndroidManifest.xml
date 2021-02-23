@@ -1,6 +1,6 @@
 <manifest
 	xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.github.jacalz.wormhole-gui"
+	package="io.github.jacalz.wormhole_gui"
 	android:versionCode="1"
 	android:versionName="3.0">
 	<application android:label="Wormhole-gui" android:debuggable="true">
