@@ -15,11 +15,10 @@ import (
 // NewFileSend takes the chosen file and sends it using wormhole-william.
 func (c *Client) NewFileSend(file fyne.URIReadCloser, progress wormhole.SendOption) (string, chan wormhole.SendResult, error) {
 	if fyne.CurrentDevice().IsMobile() {
-		buffer := &bytes.Buffer{}
-
-		n, err := io.Copy(buffer, file)
+		// Hacky way to get the size of the file
+		n, err := io.Copy(io.Discard, file)
 		if err != nil {
-			fyne.LogError("Could not copy the file contents", err)
+			fyne.LogError("Could read the file size", err)
 			return "", nil, err
 		}
 
