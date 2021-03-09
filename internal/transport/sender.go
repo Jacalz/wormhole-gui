@@ -16,7 +16,7 @@ import (
 func (c *Client) NewFileSend(file fyne.URIReadCloser, progress wormhole.SendOption) (string, chan wormhole.SendResult, error) {
 	if fyne.CurrentDevice().IsMobile() {
 		// Hacky way to get the size of the file
-		n, err := io.Copy(io.Discard, file)
+		n, err := io.Copy(ioutil.Discard, file)
 		if err != nil {
 			fyne.LogError("Could read the file size", err)
 			return "", nil, err
