@@ -12,10 +12,16 @@ func Create(app fyne.App, window fyne.Window) *container.AppTabs {
 	appSettings := &AppSettings{}
 	appSettings.Theme = checkTheme(app.Preferences().StringWithFallback("Theme", "Adaptive (requires restart)"), app)
 
-	return container.NewAppTabs(
+	tabs := &container.AppTabs{Items: []*container.TabItem{
 		newSend(app, window, bridge, appSettings).tabItem(),
 		newRecv(app, window, bridge, appSettings).tabItem(),
 		newSettings(app, window, bridge, appSettings).tabItem(),
 		newAbout().tabItem(),
-	)
+	}}
+
+	if fyne.CurrentDevice().IsMobile() {
+		tabs.SetTabLocation(container.TabLocationBottom)
+	}
+
+	return tabs
 }
