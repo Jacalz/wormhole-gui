@@ -26,8 +26,7 @@ func (c *Client) NewReceive(code string, pathname chan string) error {
 	}
 
 	if msg.Type == wormhole.TransferText {
-		c.receiveText(msg)
-		return nil
+		return c.receiveText(msg)
 	}
 
 	path := filepath.Join(c.DownloadPath, msg.Name)
