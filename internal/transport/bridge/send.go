@@ -1,6 +1,8 @@
 package bridge
 
 import (
+	"context"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -13,6 +15,8 @@ import (
 type SendItem struct {
 	URI      fyne.URI
 	Progress *sendProgress
+	Ctx      context.Context
+	Cancel   context.CancelFunc
 	Code     string
 	Name     string
 }
@@ -54,12 +58,9 @@ func (p *SendList) RemoveItem(i int) {
 
 // OnSelected handles removing items and stopping send (in the future)
 func (p *SendList) OnSelected(i int) {
-	if p.Items[i].Progress.Value != p.Items[i].Progress.Max { // TODO: Stop the send instead.
-		return // We can't stop running sends due to bug in wormhole-gui.
-	}
-
 	dialog.ShowConfirm("Remove from list", "Do you wish to remove the item from the list?", func(remove bool) {
 		if remove {
+			p.Items[i].Cancel()
 			p.RemoveItem(i)
 			p.Refresh()
 		}
@@ -69,9 +70,12 @@ func (p *SendList) OnSelected(i int) {
 }
 
 // NewSendItem adds data about a new send to the list and then returns the channel to update the code.
-func (p *SendList) NewSendItem(name string, uri fyne.URI) {
-	p.Items = append(p.Items, &SendItem{Name: name, Code: "Waiting for code...", URI: uri})
+func (p *SendList) NewSendItem(name string, uri fyne.URI) *SendItem {
+	ctx, cancel := context.WithTimeout(context.Background(), p.client.Timeout)
+	send := &SendItem{Name: name, Code: "Waiting for code...", URI: uri, Ctx: ctx, Cancel: cancel}
+	p.Items = append(p.Items, send)
 	p.Refresh()
+	return send
 }
 
 // OnFileSelect is intended to be passed as callback to a FileOpen dialog.
@@ -84,23 +88,24 @@ func (p *SendList) OnFileSelect(file fyne.URIReadCloser, err error) {
 		return
 	}
 
-	p.NewSendItem(file.URI().Name(), file.URI())
+	send := p.NewSendItem(file.URI().Name(), file.URI())
 
-	go func(i int) {
+	go func() {
 		defer func() {
+			send.Cancel()
 			if err = file.Close(); err != nil {
 				fyne.LogError("Error on closing file", err)
 			}
 		}()
 
-		code, result, err := p.client.NewFileSend(file, p.Items[i].Progress.update)
+		code, result, err := p.client.NewFileSend(send.Ctx, file, send.Progress.update)
 		if err != nil {
 			fyne.LogError("Error on sending file", err)
 			dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
 			return
 		}
 
-		p.Items[i].Code = code
+		send.Code = code
 		p.Refresh()
 
 		if res := <-result; res.Error != nil {
@@ -110,7 +115,7 @@ func (p *SendList) OnFileSelect(file fyne.URIReadCloser, err error) {
 		} else if res.OK {
 			p.client.ShowNotification("File send completed", "The file was sent successfully.")
 		}
-	}(p.Length() - 1)
+	}()
 }
 
 // OnDirSelect is intended to be passed as callback to a FolderOpen dialog.
@@ -123,17 +128,18 @@ func (p *SendList) OnDirSelect(dir fyne.ListableURI, err error) {
 		return
 	}
 
-	p.NewSendItem(dir.Name(), dir)
+	send := p.NewSendItem(dir.Name(), dir)
 
-	go func(i int) {
-		code, result, err := p.client.NewDirSend(dir, p.Items[i].Progress.update)
+	go func() {
+		defer send.Cancel()
+		code, result, err := p.client.NewDirSend(send.Ctx, dir, send.Progress.update)
 		if err != nil {
 			fyne.LogError("Error on sending directory", err)
 			dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
 			return
 		}
 
-		p.Items[i].Code = code
+		send.Code = code
 		p.Refresh()
 
 		if res := <-result; res.Error != nil {
@@ -143,23 +149,24 @@ func (p *SendList) OnDirSelect(dir fyne.ListableURI, err error) {
 		} else if res.OK {
 			p.client.ShowNotification("Directory send completed", "The directory was sent successfully.")
 		}
-	}(p.Length() - 1)
+	}()
 }
 
 // SendText sends new text.
 func (p *SendList) SendText() {
-	p.NewSendItem("Text Snippet", storage.NewFileURI("text")) // The file URI is a hack to get the correct icon
+	send := p.NewSendItem("Text Snippet", storage.NewFileURI("Text Snippet")) // The file URI is a hack to get the correct icon
 
-	go func(i int) {
+	go func() {
+		defer send.Cancel()
 		if text := <-p.client.ShowTextSendWindow(); text != "" {
-			code, result, err := p.client.NewTextSend(text, p.Items[i].Progress.update)
+			code, result, err := p.client.NewTextSend(send.Ctx, text, send.Progress.update)
 			if err != nil {
 				fyne.LogError("Error on sending text", err)
 				dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
 				return
 			}
 
-			p.Items[i].Code = code
+			send.Code = code
 			p.Refresh()
 
 			if res := <-result; res.Error != nil {
@@ -170,9 +177,9 @@ func (p *SendList) SendText() {
 				p.client.ShowNotification("Text send completed", "The text was sent successfully.")
 			}
 		} else {
-			p.RemoveItem(i)
+			p.RemoveItem(p.Length() - 1)
 		}
-	}(p.Length() - 1)
+	}()
 }
 
 // NewSendList greates a list of progress bars.

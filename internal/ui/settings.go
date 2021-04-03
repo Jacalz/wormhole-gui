@@ -3,6 +3,7 @@ package ui
 import (
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -10,11 +11,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/Jacalz/wormhole-gui/internal/transport"
-)
-
-var (
-	themes       = []string{"Adaptive (requires restart)", "Light", "Dark"}
-	onOffOptions = []string{"On", "Off"}
 )
 
 // AppSettings contains settings specific to the application
@@ -30,6 +26,7 @@ type settings struct {
 	overwriteFiles     *widget.RadioGroup
 	notificationRadio  *widget.RadioGroup
 
+	timeoutSelect       *widget.Select
 	componentSlider     *widget.Slider
 	componentLabel      *widget.Label
 	appID               *widget.Entry
@@ -76,6 +73,21 @@ func (s *settings) onNotificationsChanged(selected string) {
 	s.app.Preferences().SetString("Notifications", selected)
 }
 
+func (s *settings) onTimeoutChanged(selected string) {
+	switch selected {
+	case "10 seconds":
+		s.client.Timeout = time.Second * 10
+	case "30 seconds":
+		s.client.Timeout = time.Second * 30
+	case "1 minute":
+		s.client.Timeout = time.Minute
+	case "5 minutes":
+		s.client.Timeout = time.Minute * 5
+	}
+
+	s.app.Preferences().SetString("Timeout", selected)
+}
+
 func (s *settings) onComponentsChange(value float64) {
 	s.client.PassPhraseComponentLength = int(value)
 	s.app.Preferences().SetFloat("ComponentLength", value)
@@ -98,6 +110,10 @@ func (s *settings) onTransitAdressChange(address string) {
 }
 
 func (s *settings) buildUI() *container.Scroll {
+	themes := []string{"Adaptive (requires restart)", "Light", "Dark"}
+	timeouts := []string{"10 seconds", "30 seconds", "1 minute", "5 minutes"}
+	onOffOptions := []string{"On", "Off"}
+
 	s.themeSelect = &widget.Select{Options: themes, OnChanged: s.onThemeChanged, Selected: s.appSettings.Theme}
 
 	s.client.DownloadPath = s.app.Preferences().StringWithFallback("DownloadPath", transport.UserDownloadsFolder())
@@ -108,6 +124,9 @@ func (s *settings) buildUI() *container.Scroll {
 
 	s.notificationRadio = &widget.RadioGroup{Options: onOffOptions, Horizontal: true, Required: true, OnChanged: s.onNotificationsChanged}
 	s.notificationRadio.SetSelected(s.app.Preferences().StringWithFallback("Notifications", onOffOptions[1]))
+
+	s.timeoutSelect = &widget.Select{Options: timeouts, OnChanged: s.onTimeoutChanged}
+	s.timeoutSelect.SetSelected(s.app.Preferences().StringWithFallback("Timeout", timeouts[3]))
 
 	s.componentSlider, s.componentLabel = &widget.Slider{Min: 2.0, Max: 6.0, Step: 1, OnChanged: s.onComponentsChange}, &widget.Label{}
 	s.componentSlider.SetValue(s.app.Preferences().FloatWithFallback("ComponentLength", 2))
@@ -132,7 +151,10 @@ func (s *settings) buildUI() *container.Scroll {
 	)
 
 	wormholeContainer := container.NewVBox(
-		container.NewGridWithColumns(2, newBoldLabel("Passphrase Length"), container.NewBorder(nil, nil, nil, s.componentLabel, s.componentSlider)),
+		container.NewGridWithColumns(2,
+			newBoldLabel("Timeout"), s.timeoutSelect,
+			newBoldLabel("Passphrase Length"), container.NewBorder(nil, nil, nil, s.componentLabel, s.componentSlider),
+		),
 		&widget.Accordion{Items: []*widget.AccordionItem{
 			{Title: "Advanced", Detail: container.NewGridWithColumns(2,
 				newBoldLabel("AppID"), s.appID,

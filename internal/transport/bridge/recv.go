@@ -1,6 +1,8 @@
 package bridge
 
 import (
+	"context"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -14,6 +16,7 @@ type RecvItem struct {
 	URI    fyne.URI
 	Status string
 	Name   string
+	Cancel context.CancelFunc
 }
 
 // RecvList is a list of progress bars that track send progress.
@@ -54,6 +57,7 @@ func (p *RecvList) RemoveItem(i int) {
 func (p *RecvList) OnSelected(i int) {
 	dialog.ShowConfirm("Remove from list", "Do you wish to remove the item from the list?", func(remove bool) {
 		if remove {
+			p.Items[i].Cancel()
 			p.RemoveItem(i)
 			p.Refresh()
 		}
@@ -64,37 +68,36 @@ func (p *RecvList) OnSelected(i int) {
 
 // NewReceive adds data about a new send to the list and then returns the channel to update the code.
 func (p *RecvList) NewReceive(code string) {
-	p.Items = append(p.Items, &RecvItem{Name: "Waiting for filename..."})
+	ctx, cancel := context.WithTimeout(context.Background(), p.client.Timeout)
+	recv := &RecvItem{Name: "Waiting for filename...", Cancel: cancel}
+	p.Items = append(p.Items, recv)
 	p.Refresh()
 
 	path := make(chan string)
-	index := p.Length() - 1
-
 	go func() {
-		name := <-path
-		p.Items[index].URI = storage.NewFileURI(name)
-		if name != "text" {
-			p.Items[index].Name = p.Items[index].URI.Name()
-		} else {
-			p.Items[index].Name = "Text Snippet"
+		recv.Name = <-path
+		recv.URI = storage.NewFileURI(recv.Name)
+		if recv.Name != "Text Snippet" {
+			recv.Name = recv.URI.Name()
 		}
 
 		close(path)
 		p.Refresh()
 	}()
 
-	go func(code string) {
-		if err := p.client.NewReceive(code, path); err != nil {
-			p.Items[index].Status = "Failed"
+	go func() {
+		if err := p.client.NewReceive(ctx, code, path); err != nil {
+			recv.Status = "Failed"
 			p.client.ShowNotification("Receive failed", "An error occurred when receiving the data.")
 			dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
 		} else {
-			p.Items[index].Status = "Completed"
+			recv.Status = "Completed"
 			p.client.ShowNotification("Receive completed", "The data was received successfully.")
 		}
 
+		cancel()
 		p.Refresh()
-	}(code)
+	}()
 }
 
 // NewRecvList greates a list of progress bars.

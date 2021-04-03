@@ -4,6 +4,7 @@ package transport
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"github.com/psanford/wormhole-william/wormhole"
@@ -22,6 +23,9 @@ type Client struct {
 	// OverwriteExisting holds the settings value for if we should overwrite already existing files.
 	OverwriteExisting bool
 
+	// Timeout holds the amount of time after which sends and receives should cancel.
+	Timeout time.Duration
+
 	// DownloadPath holds the download path used for saving received files.
 	DownloadPath string
 }
@@ -35,7 +39,7 @@ func (c *Client) ShowNotification(title, content string) {
 
 // NewClient returns a new client for sending and receiving using wormhole-william
 func NewClient() *Client {
-	return &Client{display: createTextWindow()}
+	return &Client{display: createTextWindow(), Timeout: time.Minute}
 }
 
 // UserDownloadsFolder returns the downloads folder corresponding to the current user.

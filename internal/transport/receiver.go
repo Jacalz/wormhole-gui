@@ -25,14 +25,14 @@ func bail(msg *wormhole.IncomingMessage, err error) error {
 }
 
 // NewReceive runs a receive using wormhole-william and handles types accordingly.
-func (c *Client) NewReceive(code string, pathname chan string) (err error) {
+func (c *Client) NewReceive(ctx context.Context, code string, pathname chan string) (err error) {
 	// We want to always send a URI, even on fail, in order to not block goroutines
-	pathToSend := "text"
+	pathToSend := "Text Snippet"
 	defer func() {
 		pathname <- pathToSend
 	}()
 
-	msg, err := c.Receive(context.Background(), code)
+	msg, err := c.Receive(ctx, code)
 	if err != nil {
 		fyne.LogError("Error on receiving data", err)
 		return bail(msg, err)
