@@ -39,17 +39,7 @@ func (c *Client) NewReceive(ctx context.Context, code string, pathname chan stri
 	}
 
 	if msg.Type == wormhole.TransferText {
-		text := &bytes.Buffer{}
-		text.Grow(int(msg.TransferBytes64))
-
-		_, err := io.Copy(text, msg)
-		if err != nil {
-			fyne.LogError("Could not copy the received text", err)
-			return err
-		}
-
-		c.showTextReceiveWindow(text)
-		return nil
+		return c.receiveText(msg)
 	}
 
 	path := filepath.Join(c.DownloadPath, msg.Name)
@@ -116,4 +106,18 @@ func (c *Client) NewReceive(ctx context.Context, code string, pathname chan stri
 	}
 
 	return
+}
+
+func (c *Client) receiveText(msg *wormhole.IncomingMessage) error {
+	text := &bytes.Buffer{}
+	text.Grow(int(msg.TransferBytes64))
+
+	_, err := io.Copy(text, msg)
+	if err != nil {
+		fyne.LogError("Could not copy the received text", err)
+		return err
+	}
+
+	c.showTextReceiveWindow(text)
+	return nil
 }
