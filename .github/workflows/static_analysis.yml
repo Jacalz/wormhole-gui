@@ -18,8 +18,8 @@ jobs:
         go install golang.org/x/tools/cmd/goimports@latest
         go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
         go install golang.org/x/lint/golint@latest
-        go install honnef.co/go/tools/cmd/staticcheck@v0.1.4
-        go install github.com/securego/gosec/v2/cmd/gosec@v2.7.0
+        go install honnef.co/go/tools/cmd/staticcheck@v0.2.0
+        go install github.com/securego/gosec/v2/cmd/gosec@v2.8.0
 
     - name: Vet
       run: go vet ./...
