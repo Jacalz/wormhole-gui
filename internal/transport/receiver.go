@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -46,7 +47,7 @@ func (c *Client) NewReceive(ctx context.Context, code string, pathname chan stri
 	pathToSend = storage.NewFileURI(path).String()
 
 	if !c.OverwriteExisting {
-		if _, err := os.Stat(path); err == nil || os.IsExist(err) {
+		if _, err := os.Stat(path); err == nil || errors.Is(err, os.ErrExist) {
 			fyne.LogError("Settings prevent overwriting existing files and folders", err)
 			return bail(msg, os.ErrExist)
 		}
