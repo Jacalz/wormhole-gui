@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"errors"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -86,13 +87,16 @@ func (p *RecvList) NewReceive(code string) {
 	}()
 
 	go func() {
-		if err := p.client.NewReceive(ctx, code, path); err != nil {
+		if err := p.client.NewReceive(ctx, code, path); err == nil {
+			recv.Status = "Completed"
+			p.client.ShowNotification("Receive completed", "The data was received successfully.")
+		} else if errors.Is(err, context.Canceled) {
+			recv.Status = "Cancelled"
+			p.client.ShowNotification("Receive cancelled", "The receive was cancelled.")
+		} else {
 			recv.Status = "Failed"
 			p.client.ShowNotification("Receive failed", "An error occurred when receiving the data.")
 			dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
-		} else {
-			recv.Status = "Completed"
-			p.client.ShowNotification("Receive completed", "The data was received successfully.")
 		}
 
 		cancel()

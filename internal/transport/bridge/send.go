@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"errors"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -108,12 +109,14 @@ func (p *SendList) OnFileSelect(file fyne.URIReadCloser, err error) {
 		send.Code = code
 		p.Refresh()
 
-		if res := <-result; res.Error != nil {
+		if res := <-result; res.Error == nil && res.OK {
+			p.client.ShowNotification("File send completed", "The file was sent successfully.")
+		} else if errors.Is(res.Error, context.Canceled) {
+			p.client.ShowNotification("File send cancelled", "The file send was cancelled.")
+		} else {
 			fyne.LogError("Error on sending file", res.Error)
 			dialog.ShowError(res.Error, fyne.CurrentApp().Driver().AllWindows()[0])
 			p.client.ShowNotification("File send failed", "An error occurred when sending the file.")
-		} else if res.OK {
-			p.client.ShowNotification("File send completed", "The file was sent successfully.")
 		}
 	}()
 }
@@ -142,12 +145,14 @@ func (p *SendList) OnDirSelect(dir fyne.ListableURI, err error) {
 		send.Code = code
 		p.Refresh()
 
-		if res := <-result; res.Error != nil {
+		if res := <-result; res.Error == nil && res.OK {
+			p.client.ShowNotification("Directory send completed", "The directory was sent successfully.")
+		} else if errors.Is(res.Error, context.Canceled) {
+			p.client.ShowNotification("Directory send cancelled", "The directory send was cancelled.")
+		} else {
 			fyne.LogError("Error on sending directory", res.Error)
 			dialog.ShowError(res.Error, fyne.CurrentApp().Driver().AllWindows()[0])
 			p.client.ShowNotification("Directory send failed", "An error occurred when sending the directory.")
-		} else if res.OK {
-			p.client.ShowNotification("Directory send completed", "The directory was sent successfully.")
 		}
 	}()
 }
@@ -169,12 +174,14 @@ func (p *SendList) SendText() {
 			send.Code = code
 			p.Refresh()
 
-			if res := <-result; res.Error != nil {
-				fyne.LogError("Error on sending text", res.Error)
+			if res := <-result; res.Error == nil && res.OK {
+				p.client.ShowNotification("Text send completed", "The text was sent successfully.")
+			} else if errors.Is(res.Error, context.Canceled) {
+				p.client.ShowNotification("Text send cancelled", "The text send was cancelled.")
+			} else {
+				fyne.LogError("Error on sending file", res.Error)
 				dialog.ShowError(res.Error, fyne.CurrentApp().Driver().AllWindows()[0])
 				p.client.ShowNotification("Text send failed", "An error occurred when sending the text.")
-			} else if res.OK && p.client.Notifications {
-				p.client.ShowNotification("Text send completed", "The text was sent successfully.")
 			}
 		} else {
 			p.RemoveItem(p.Length() - 1)
