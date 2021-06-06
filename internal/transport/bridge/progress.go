@@ -24,6 +24,13 @@ func (p *sendProgress) updateProgress(sent int64, total int64) {
 	p.SetValue(float64(sent))
 }
 
+func (p *sendProgress) setStatus(status string) {
+	if status != "" {
+		p.TextFormatter = func() string { return status }
+		p.Refresh()
+	}
+}
+
 // newSendProgress creates a new fyne progress bar and update function for wormhole send.
 func newSendProgress() *sendProgress {
 	p := &sendProgress{}
@@ -35,43 +42,26 @@ func newSendProgress() *sendProgress {
 
 type recvProgress struct {
 	widget.ProgressBarInfinite
-	done       *widget.ProgressBar
-	statusText string
+	done *widget.ProgressBar
 }
 
-func (r *recvProgress) status() string {
-	return r.statusText
-}
+func (r *recvProgress) setStatus(status string) {
+	switch status {
+	case "":
+		return
+	case "Failed":
+		r.done.Value = 0.0
+	case "Completed":
+		r.done.Value = 1.0
+	}
 
-func (r *recvProgress) finished() {
+	r.done.TextFormatter = func() string { return status }
 	r.Hide()
 	r.done.Show()
 }
 
-func (r *recvProgress) completed() {
-	r.done.Value = 1.0
-	r.finished()
-}
-
-func (r *recvProgress) failed() {
-	r.done.Value = 0.0
-	r.finished()
-}
-
-func (r *recvProgress) setStatus(stat string) {
-	switch stat {
-	case "Failed":
-		r.failed()
-	case "Completed":
-		r.completed()
-	}
-
-	r.statusText = stat
-}
-
 func newRecvProgress() *fyne.Container {
 	r := &recvProgress{done: &widget.ProgressBar{}}
-	r.done.TextFormatter = r.status
 	r.done.Hide()
 	r.ExtendBaseWidget(r)
 

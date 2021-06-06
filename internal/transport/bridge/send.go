@@ -14,12 +14,11 @@ import (
 
 // SendItem is the item that is being sent.
 type SendItem struct {
-	URI      fyne.URI
-	Progress *sendProgress
-	Ctx      context.Context
-	Cancel   context.CancelFunc
-	Code     string
-	Name     string
+	URI        fyne.URI
+	Progress   *sendProgress
+	Ctx        context.Context
+	Cancel     context.CancelFunc
+	Code, Name string
 }
 
 // SendList is a list of progress bars that track send progress.
@@ -111,12 +110,15 @@ func (p *SendList) OnFileSelect(file fyne.URIReadCloser, err error) {
 
 		if res := <-result; res.Error == nil && res.OK {
 			p.client.ShowNotification("File send completed", "The file was sent successfully.")
-		} else if errors.Is(res.Error, context.Canceled) {
+			send.Progress.setStatus("Completed")
+		} else if errors.Is(res.Error, context.Canceled) || errors.Is(res.Error, context.DeadlineExceeded) {
 			p.client.ShowNotification("File send cancelled", "The file send was cancelled.")
+			send.Progress.setStatus("Cancelled")
 		} else {
 			fyne.LogError("Error on sending file", res.Error)
 			dialog.ShowError(res.Error, fyne.CurrentApp().Driver().AllWindows()[0])
 			p.client.ShowNotification("File send failed", "An error occurred when sending the file.")
+			send.Progress.setStatus("Failed")
 		}
 	}()
 }
@@ -147,12 +149,15 @@ func (p *SendList) OnDirSelect(dir fyne.ListableURI, err error) {
 
 		if res := <-result; res.Error == nil && res.OK {
 			p.client.ShowNotification("Directory send completed", "The directory was sent successfully.")
-		} else if errors.Is(res.Error, context.Canceled) {
+			send.Progress.setStatus("Completed")
+		} else if errors.Is(res.Error, context.Canceled) || errors.Is(res.Error, context.DeadlineExceeded) {
 			p.client.ShowNotification("Directory send cancelled", "The directory send was cancelled.")
+			send.Progress.setStatus("Cancelled")
 		} else {
 			fyne.LogError("Error on sending directory", res.Error)
 			dialog.ShowError(res.Error, fyne.CurrentApp().Driver().AllWindows()[0])
 			p.client.ShowNotification("Directory send failed", "An error occurred when sending the directory.")
+			send.Progress.setStatus("Failed")
 		}
 	}()
 }
@@ -176,12 +181,15 @@ func (p *SendList) SendText() {
 
 			if res := <-result; res.Error == nil && res.OK {
 				p.client.ShowNotification("Text send completed", "The text was sent successfully.")
-			} else if errors.Is(res.Error, context.Canceled) {
+				send.Progress.setStatus("Completed")
+			} else if errors.Is(res.Error, context.Canceled) || errors.Is(res.Error, context.DeadlineExceeded) {
 				p.client.ShowNotification("Text send cancelled", "The text send was cancelled.")
+				send.Progress.setStatus("Cancelled")
 			} else {
 				fyne.LogError("Error on sending file", res.Error)
 				dialog.ShowError(res.Error, fyne.CurrentApp().Driver().AllWindows()[0])
 				p.client.ShowNotification("Text send failed", "An error occurred when sending the text.")
+				send.Progress.setStatus("Failed")
 			}
 		} else {
 			p.RemoveItem(p.Length() - 1)

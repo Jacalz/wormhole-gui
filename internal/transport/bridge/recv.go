@@ -90,7 +90,7 @@ func (p *RecvList) NewReceive(code string) {
 		if err := p.client.NewReceive(ctx, code, path); err == nil {
 			recv.Status = "Completed"
 			p.client.ShowNotification("Receive completed", "The data was received successfully.")
-		} else if errors.Is(err, context.Canceled) {
+		} else if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			recv.Status = "Cancelled"
 			p.client.ShowNotification("Receive cancelled", "The receive was cancelled.")
 		} else {
