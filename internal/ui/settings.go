@@ -75,14 +75,18 @@ func (s *settings) onNotificationsChanged(selected string) {
 
 func (s *settings) onTimeoutChanged(selected string) {
 	switch selected {
-	case "10 seconds":
-		s.client.Timeout = time.Second * 10
 	case "30 seconds":
 		s.client.Timeout = time.Second * 30
 	case "1 minute":
 		s.client.Timeout = time.Minute
 	case "5 minutes":
 		s.client.Timeout = time.Minute * 5
+	case "10 minutes":
+		s.client.Timeout = time.Minute * 10
+	case "30 minutes":
+		s.client.Timeout = time.Minute * 30
+	case "1 hour":
+		s.client.Timeout = time.Hour
 	}
 
 	s.app.Preferences().SetString("Timeout", selected)
@@ -111,7 +115,7 @@ func (s *settings) onTransitAdressChange(address string) {
 
 func (s *settings) buildUI() *container.Scroll {
 	themes := []string{"Adaptive (requires restart)", "Light", "Dark"}
-	timeouts := []string{"10 seconds", "30 seconds", "1 minute", "5 minutes"}
+	timeouts := []string{"30 seconds", "1 minute", "5 minutes", "10 minutes", "30 minutes", "1 hour"}
 	onOffOptions := []string{"On", "Off"}
 
 	s.themeSelect = &widget.Select{Options: themes, OnChanged: s.onThemeChanged, Selected: s.appSettings.Theme}
@@ -126,7 +130,7 @@ func (s *settings) buildUI() *container.Scroll {
 	s.notificationRadio.SetSelected(s.app.Preferences().StringWithFallback("Notifications", onOffOptions[1]))
 
 	s.timeoutSelect = &widget.Select{Options: timeouts, OnChanged: s.onTimeoutChanged}
-	s.timeoutSelect.SetSelected(s.app.Preferences().StringWithFallback("Timeout", timeouts[3]))
+	s.timeoutSelect.SetSelected(s.app.Preferences().StringWithFallback("Timeout", timeouts[5]))
 
 	s.componentSlider, s.componentLabel = &widget.Slider{Min: 2.0, Max: 6.0, Step: 1, OnChanged: s.onComponentsChange}, &widget.Label{}
 	s.componentSlider.SetValue(s.app.Preferences().FloatWithFallback("ComponentLength", 2))
